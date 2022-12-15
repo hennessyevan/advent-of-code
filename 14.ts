@@ -20,13 +20,13 @@ function printGrid(
       ...input.map((line) =>
         line.map((point) => point[0]).reduce((a, b) => Math.max(a, b))
       )
-    ) + 10
+    ) + 200
   const leftMostPoint =
     Math.min(
       ...input.map((line) =>
         line.map((point) => point[0]).reduce((a, b) => Math.min(a, b))
       )
-    ) - 5
+    ) - 150
   const bottomMostPoint =
     Math.max(
       ...input.map((line) =>
@@ -38,7 +38,7 @@ function printGrid(
       ...input.map((line) =>
         line.map((point) => point[1]).reduce((a, b) => Math.min(a, b))
       )
-    ) - 4
+    ) - 25
 
   const gridArea = grid
     .slice(topMostPoint, bottomMostPoint)
@@ -75,7 +75,7 @@ function createGrid(input: ReturnType<typeof parseInput>) {
   const floorY = bottomMostPoint + 2
 
   const grid = Array.from({ length: bottomMostPoint + 10 }, () =>
-    Array.from({ length: rightMostPoint + 10 }, () => '.')
+    Array.from({ length: rightMostPoint + 1000 }, () => '.')
   )
 
   function drawLine(
@@ -114,6 +114,11 @@ function createGrid(input: ReturnType<typeof parseInput>) {
     }
   })
 
+  // Draw the floor
+  for (let x = 0; x < grid[0].length; x++) {
+    grid[floorY][x] = '#'
+  }
+
   return grid
 }
 
@@ -124,16 +129,19 @@ function part1(input: ReturnType<typeof parseInput>) {
   let overflowing = false
   let restedSand = 0
   const visualize = true
-  const speed = 1
+  const speed = 0
+
+  let spoutBlocked = false
 
   async function simulateDownwardFlow(
     startingPoint: [number, number],
     grid: string[][]
   ) {
-    if (overflowing) return
+    if (spoutBlocked) {
+      return
+    }
 
     if (visualize) {
-      printGrid(input, grid, restedSand)
       await new Promise((resolve) => setTimeout(resolve, speed))
     }
 
@@ -165,8 +173,25 @@ function part1(input: ReturnType<typeof parseInput>) {
       )
 
       if (bothDiagonalsBlocked) {
+        if (y === sandSpoutPoint[1]) {
+          const pointToTheDownRight = grid[y + 1][x + 1]
+          const pointToTheDownLeft = grid[y + 1][x - 1]
+          const bothPointsToTheDownAreBlocked = [
+            pointToTheDownRight,
+            pointToTheDownLeft,
+          ].every((point) => ['#', sandGlyph].includes(point))
+
+          if (bothPointsToTheDownAreBlocked) {
+            grid[sandSpoutPoint[1]][sandSpoutPoint[0]] = sandGlyph
+            restedSand = restedSand + 1
+            spoutBlocked = true
+            printGrid(input, grid, restedSand)
+          }
+          return
+        }
         // if both diagonals are blocked simulate a new sand drop
         restedSand = restedSand + 1
+
         return simulateDownwardFlow(sandSpoutPoint, grid)
       }
     } else {
@@ -191,7 +216,7 @@ function part1(input: ReturnType<typeof parseInput>) {
 }
 
 function test() {
-  const input = importInput(14.1)
+  const input = importInput(14)
   const parsedInput = parseInput(input)
   console.log(part1(parsedInput))
 }
